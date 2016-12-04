@@ -34,3 +34,20 @@ public class BitCode {
 	}
 	
 }
+
+
+public class MagicCookieVerifyingBitCode : BitCode {
+	var magicCookie:[UInt8]
+	public init(data:Data, magicCookie:[UInt8]) {
+		self.magicCookie = magicCookie
+		super.init(data:data)
+	}
+	
+	public override var startingCursor:Cursor {
+		return Cursor(byte:magicCookie.count, bit:0)
+	}
+	
+	//TODO: verify the magic cookie before proceeding
+	//public override func findTopLevelBlocks()->[Block] {
+	
+}
