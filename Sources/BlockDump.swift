@@ -10,7 +10,7 @@ import Foundation
 
 extension Block {
 	
-	///Use this to return a pretty-printed textual description of the contents, using block and record names from the bit-code file itself
+	
 	public func dump()->String {
 		return dump(indentation: 0).joined(separator: "\n")
 	}
@@ -32,14 +32,11 @@ extension Block {
 			if let subBlock = item as? Block {
 				allLines.append(contentsOf: subBlock.dump(indentation: indentation + 1))
 			} else if let record = item as? DataRecord {
-				//TODO: do something useful with the record
-				allLines.append("\(indentationString)\trecord")
-			} else if let unabbreviatedRecord = item as? UnabbreviatedRecord {
-				if blockID == 0 { continue }	//for clarity
-				let args:[String] = unabbreviatedRecord.operands.map({ (int) -> String in
-					return "\(int)"
+				let args:[String] = record.operands.map({ (int) -> String in
+					return "\(int.description)"
 				})
-				allLines.append("\(indentationString)\t\(unabbreviatedRecord.code):\(args.joined(separator: ","))")
+				let codeString:String = "\(record.code ?? -1)"
+				allLines.append("\(indentationString)\t\(codeString):\(args.joined(separator: ","))")
 			}
 		}
 		return allLines
@@ -71,13 +68,11 @@ extension Block {
 					
 					allLines.append(line)
 				} else {
-					allLines.append("\(indentationString)\trecord")
+					let args:[String] = record.operands.map({ (int) -> String in
+						return "\(int.description)"
+					})
+					allLines.append("\(indentationString)\t\(record.code):\(args.joined(separator: ","))")
 				}
-			} else if let unabbreviatedRecord = item as? UnabbreviatedRecord {
-				let args:[String] = unabbreviatedRecord.operands.map({ (int) -> String in
-					return "\(int)"
-				})
-				allLines.append("\(indentationString)\t\(unabbreviatedRecord.code):\(args.joined(separator: ","))")
 			}
 		}
 		return allLines

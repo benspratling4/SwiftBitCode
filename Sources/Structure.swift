@@ -6,6 +6,7 @@
 //  Copyright © 2016 benspratling.com. All rights reserved.
 //
 
+
 import Foundation
 
 public protocol BlockItem {
@@ -66,21 +67,27 @@ public enum Primitive {
 
 
 public struct DataRecord : BlockItem {
+	///all the primitives stored in the record
 	public var primitives:[Primitive] = []
 	
+	/// the first primitive, if it can be interpretted as a record
 	public var code:Int? {
 		get {
 			return primitives.first?.integerValue
 		}
 	}
-	
-	public var args:[Primitive] {
+	///primitives after the first one, i.e. "operands"
+	public var operands:[Primitive] {
 		get {
 			if primitives.count == 0 {
 				return []
 			}
 			return [Primitive](primitives.dropFirst())
 		}
+	}
+	
+	public init(primitives:[Primitive]) {
+		self.primitives = primitives
 	}
 }
 
@@ -96,16 +103,6 @@ public class Block : BlockItem {
 	public init(blockID:Int, totalLength:Int) {
 		self.blockID = blockID
 		self.totalLength = totalLength
-	}
-}
-
-// migrate to a sub-type of DataRecord, or just use a Data Record
-public class UnabbreviatedRecord : BlockItem {
-	public var code:Int
-	public var operands:[Int]
-	public init(code:Int,operands:[Int]) {
-		self.code = code
-		self.operands = operands
 	}
 }
 

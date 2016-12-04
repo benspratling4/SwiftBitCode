@@ -12,8 +12,7 @@ import Foundation
 public enum BitCodeError : Error {
 	///location in file, the abbreviation value
 	case unknownAbbreviation(Cursor, Int)
-	/// this may be intended or early, in a top-level block, there is no "endBlock" code, so reaching the end is expected
-	case endOfFile
+	case prematureEndOfFile	//which always happens at the end
 }
 
 /// Concrete instances build particular kinds of blocks
@@ -80,26 +79,26 @@ public class BlockInfoFactory : GenericBlockFactory {
 	var currentBlockInfo:BlockInfo?
 	
 	
-	public override func newUnabbreviatedRecord(stream:BitStream, abbreviation:Int)->UnabbreviatedRecord {
+	public override func newUnabbreviatedRecord(stream:BitStream, abbreviation:Int)->DataRecord {
 		let record = super.newUnabbreviatedRecord(stream:stream, abbreviation: abbreviation)
 		//figure out what to do
 		if record.code == 1 {	//TODO: add enum for code values
-			let code:Int = record.operands.first ?? 0
+			let code:Int = record.operands.first?.integerValue ?? 0
 			currentBlockInfo = blockInfo(for:code)
 		} else if record.code == 2 {	//blockname
 			//bytes form a string
 			let bytes:[UInt8] = record.operands.map({ (int) -> UInt8 in
-				return UInt8(int)
+				return UInt8(int.integerValue!)
 			})
 			let data = Data(bytes)
 			currentBlockInfo?.name = String(data:data, encoding:.utf8)
 		} else if record.code == 3 {	//set record name
-			//code for the record ID 
-			let recordNumber:Int = record.operands.first!
+			//code for the record ID
+			let recordNumber:Int = record.operands.first!.integerValue!
 			//variable ints making bytes for string name
 			let ops = record.operands.dropFirst()
 			let bytes:[UInt8] = ops.map({ (int) -> UInt8 in
-				return UInt8(int)
+				return UInt8(int.integerValue!)
 			})
 			let data = Data(bytes)
 			if let name = String(data:data, encoding:.utf8) {
@@ -141,7 +140,7 @@ public class GenericBlockFactory : BlockFactory {
 		//round up
 		stream.roundUpCursorTo32Bits()
 		let subBlockLength:Int = stream.fixedInt(width: 32)
-		let block:Block = Block(blockID: code, totalLength: subBlockLength)
+		var block:Block = Block(blockID: code, totalLength: subBlockLength)
 		block.info = info
 		while true {
 			//read an abbreviation
@@ -159,7 +158,7 @@ public class GenericBlockFactory : BlockFactory {
 				let abbrev:Abbreviation = newAbbreviation(stream:stream)
 				knownAbbreviations[nextAbbreviationIndex] = abbrev
 			case 3:	//unabbreviated record
-				let record:UnabbreviatedRecord = newUnabbreviatedRecord(stream:stream, abbreviation: abbreviation)
+				let record:DataRecord = newUnabbreviatedRecord(stream:stream, abbreviation: abbreviation)
 				block.items.append(record)
 			default:
 				//record abbreviation
@@ -171,7 +170,7 @@ public class GenericBlockFactory : BlockFactory {
 		fatalError()
 	}
 	
-	public func newUnabbreviatedRecord(stream:BitStream, abbreviation:Int)->UnabbreviatedRecord {
+	public func newUnabbreviatedRecord(stream:BitStream, abbreviation:Int)->DataRecord {
 		return UnabbreviatedRecordFactory().newRecord(stream:stream)
 	}
 	
@@ -251,14 +250,14 @@ public class PrimaryBlockFactory : BlockFactory, BlockFactoryFactory {
 	var blockInfoByCode:[Int:BlockInfo] = [:]
 	
 	public func newBlock(stream:BitStream)->Block {
-		let mainBlock = Block(blockID:0, totalLength: stream.data.count - stream.cursor.byte)
+		var mainBlock = Block(blockID:0, totalLength: stream.data.count - stream.cursor.byte)
 		//somehow, loop this
 		//read an abbreviation
 		while true {
 			if stream.cursor.byte >= stream.data.count {
 				return mainBlock
 			}
-			let abbreviation:Int = stream.fixedInt(width: 2)
+			var abbreviation:Int = stream.fixedInt(width: 2)
 			if abbreviation == 0 {	//end
 				return mainBlock
 			} else if abbreviation == 1 {	//new sub block
@@ -272,7 +271,7 @@ public class PrimaryBlockFactory : BlockFactory, BlockFactoryFactory {
 					blockInfoByCode = infoBlock.infosByCode
 				}
 			} else if abbreviation == 3 {//unabbreviated entry
-				let record:UnabbreviatedRecord = UnabbreviatedRecordFactory().newRecord(stream:stream)
+				let record:DataRecord = UnabbreviatedRecordFactory().newRecord(stream:stream)
 				mainBlock.items.append(record)
 			} else {
 				//TODO: write me
@@ -298,15 +297,16 @@ public class PrimaryBlockFactory : BlockFactory, BlockFactoryFactory {
 
 
 class UnabbreviatedRecordFactory {
-	func newRecord(stream:BitStream)->UnabbreviatedRecord {
+	func newRecord(stream:BitStream)->DataRecord {
+		var primitives:[Primitive] = []
 		let code:Int = stream.variableInt(width: 6)
+		primitives.append(.integer(code))
 		let numberOfOperands:Int = stream.variableInt(width: 6)
-		var operands:[Int] = []
 		for _ in 0..<numberOfOperands {
 			let operand:Int = stream.variableInt(width: 6)
-			operands.append(operand)
+			primitives.append(.integer(operand))
 		}
-		return UnabbreviatedRecord(code:code, operands:operands)
+		return DataRecord(primitives:primitives)
 	}
 }
 
@@ -326,20 +326,20 @@ class AbbreviationFactory {
 			}
 			let encoding:Int = stream.fixedInt(width: 3)
 			switch encoding {
-				case 1:	//fixed width
-					let width:Int = stream.variableInt(width: 5)
-					operands.append(.fixed(width))
-				case 2:	//variable bit
-					let width:Int = stream.variableInt(width: 5)
-					operands.append(.variable(width))
-				case 3:	//array
-					operands.append(.array)
-				case 4:	//char
-					operands.append(.char)
-				case 5://blob
-					operands.append(.blob)
-				default:
-					fatalError()
+			case 1:	//fixed width
+				let width:Int = stream.variableInt(width: 5)
+				operands.append(.fixed(width))
+			case 2:	//variable bit
+				let width:Int = stream.variableInt(width: 5)
+				operands.append(.variable(width))
+			case 3:	//array
+				operands.append(.array)
+			case 4:	//char
+				operands.append(.char)
+			case 5://blob
+				operands.append(.blob)
+			default:
+				fatalError()
 			}
 		}
 		return Abbreviation(operands:operands)
