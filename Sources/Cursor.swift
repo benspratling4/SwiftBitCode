@@ -8,9 +8,13 @@
 
 import Foundation
 
+//The offset from the beginning of a Data at which a bit is located
 public struct Cursor : Comparable, CustomDebugStringConvertible {
+	///generaly should be
 	public var byte:Int
-	public var bit:UInt8	//only value 0-7 are valid
+	
+	///only values 0-7 are valid
+	public var bit:UInt8
 	
 	public init(byte:Int = 0, bit:UInt8 = 0) {
 		self.byte = byte

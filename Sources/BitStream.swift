@@ -8,6 +8,8 @@
 
 import Foundation
 
+///reads bit-code specific integer formats from a Data.
+///Keeps track of its location with an internal Cursor, automatically advances when reading
 public class BitStream {
 	public var cursor:Cursor
 	public var data:Data

@@ -8,6 +8,7 @@
 
 import Foundation
 
+///The factories should use the BitStream instead
 extension Data {
 	///these bits are LSB first, not MSB first like human writing
 	public func bits(at:Cursor, count:Int = 1)->([Bool], Cursor) {
