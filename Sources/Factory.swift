@@ -12,7 +12,12 @@ import Foundation
 public enum BitCodeError : Error {
 	///location in file, the abbreviation value
 	case unknownAbbreviation(Cursor, Int)
-	case prematureEndOfFile	//which always happens at the end
+	
+	/// Bits can only have values from 0-7
+	case bitValueOutOfRange
+	
+	//which always happens at the end
+	case prematureEndOfFile
 }
 
 /// Concrete instances build particular kinds of blocks
@@ -46,12 +51,13 @@ public class SkipBlockFactory : BlockFactory {
 		stream.roundUpCursorTo32Bits()
 		//read the number of words in this block
 		let subBlockLength:Int = stream.fixedInt(width: 32)
+		let start:Cursor = stream.cursor
 		var c = stream.cursor
 		c.byte += subBlockLength * 4
 		c.bit = 0
 		stream.seek(to: c)
 		//make the cursor skip it
-		return Block(blockID: code, abbreviationWidth:abbreviationWidth, totalLength: subBlockLength)
+		return Block(blockID: code, abbreviationWidth:abbreviationWidth, totalLength: subBlockLength, start:start)
 	}
 }
 
@@ -140,7 +146,8 @@ public class GenericBlockFactory : BlockFactory {
 		//round up
 		stream.roundUpCursorTo32Bits()
 		let subBlockLength:Int = stream.fixedInt(width: 32)
-		let block:Block = Block(blockID: code, abbreviationWidth:abbrevitationLength, totalLength: subBlockLength)
+		let start:Cursor = stream.cursor
+		let block:Block = Block(blockID: code, abbreviationWidth:abbrevitationLength, totalLength: subBlockLength, start:start)
 		block.info = info
 		while true {
 			//read an abbreviation

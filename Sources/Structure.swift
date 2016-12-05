@@ -108,10 +108,13 @@ public class Block : BlockItem {
 	
 	public var items:[BlockItem] = []	//stack, or map with integer keys?
 	
-	public init(blockID:Int, abbreviationWidth:Int, totalLength:Int) {
+	//follows the abbrviation, code, abbreviation length padding and total lengthfield
+	public var start:Cursor
+	public init(blockID:Int, abbreviationWidth:Int, totalLength:Int, start:Cursor) {
 		self.blockID = blockID
 		self.abbreviationWidth = abbreviationWidth
 		self.totalLength = totalLength
+		self.start = start
 	}
 }
 
