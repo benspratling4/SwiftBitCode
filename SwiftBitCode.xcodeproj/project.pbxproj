@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B50399A71DF39EE3005C1D12 /* StartHere.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50399A61DF39EE3005C1D12 /* StartHere.swift */; };
+		B505AFDA1DF562ED00345608 /* BitReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = B505AFD91DF562ED00345608 /* BitReading.swift */; };
 		_LinkFileRef_SwiftBitCode_via_SwiftBitCodeTests /* SwiftBitCode.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "_____Product_SwiftBitCode" /* SwiftBitCode.framework */; };
 		__src_cc_ref_Sources/BitStream.swift /* BitStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/BitStream.swift /* BitStream.swift */; };
 		__src_cc_ref_Sources/BlockDump.swift /* BlockDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/BlockDump.swift /* BlockDump.swift */; };
@@ -33,6 +34,7 @@
 
 /* Begin PBXFileReference section */
 		B50399A61DF39EE3005C1D12 /* StartHere.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StartHere.swift; sourceTree = "<group>"; };
+		B505AFD91DF562ED00345608 /* BitReading.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BitReading.swift; sourceTree = "<group>"; };
 		__PBXFileRef_Package.swift /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		__PBXFileRef_Sources/BitStream.swift /* BitStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitStream.swift; sourceTree = "<group>"; };
 		__PBXFileRef_Sources/BlockDump.swift /* BlockDump.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockDump.swift; sourceTree = "<group>"; };
@@ -134,6 +136,7 @@
 			children = (
 				__PBXFileRef_Tests/SwiftBitCodeTests/BitwiseIntTests.swift /* BitwiseIntTests.swift */,
 				__PBXFileRef_Tests/SwiftBitCodeTests/TestCursor.swift /* TestCursor.swift */,
+				B505AFD91DF562ED00345608 /* BitReading.swift */,
 			);
 			name = SwiftBitCodeTests;
 			path = Tests/SwiftBitCodeTests;
@@ -232,6 +235,7 @@
 			files = (
 				__src_cc_ref_Tests/SwiftBitCodeTests/BitwiseIntTests.swift /* BitwiseIntTests.swift in Sources */,
 				__src_cc_ref_Tests/SwiftBitCodeTests/TestCursor.swift /* TestCursor.swift in Sources */,
+				B505AFDA1DF562ED00345608 /* BitReading.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
