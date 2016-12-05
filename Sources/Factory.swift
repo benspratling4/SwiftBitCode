@@ -180,7 +180,6 @@ public class GenericBlockFactory : BlockFactory {
 			switch op {
 			case .char:
 				let charValue:Int = stream.fixedInt(width: 6)
-				//not right
 				let scalar = Primitive.scalar(forChar:charValue)
 				return .char(scalar)
 			case .literal(let int):
@@ -195,6 +194,7 @@ public class GenericBlockFactory : BlockFactory {
 				//read the length
 				let byteCount:Int = stream.variableInt(width: 6)
 				stream.roundUpCursorTo32Bits()
+				//read the bytes
 				var bytes:[UInt8] = []
 				for _ in 0..<byteCount {
 					let byteInt:UInt8 = stream.byte()
@@ -240,66 +240,69 @@ public class GenericBlockFactory : BlockFactory {
 
 
 /// The first assumed Block Factory, which knows only how to open subblacks and unabbreviated records
-public class PrimaryBlockFactory : BlockFactory, BlockFactoryFactory {
-	public init() {
+open class TopLevelBlockFactory : BlockFactoryFactory {
+	open let stream:BitStream
+	public init(stream:BitStream) {
+		self.stream = stream
 	}
 	
-	///don't use
-	public required init(code: Int, info:BlockInfo?) {
-		fatalError()
-	}
+	private var blockInfoByCode:[Int:BlockInfo] = [:]
 	
-	var blockInfoByCode:[Int:BlockInfo] = [:]
-	
-	public func newBlock(stream:BitStream)->Block {
-		let mainBlock = Block(blockID:0, abbreviationWidth:2, totalLength: stream.data.count - stream.cursor.byte)
+	open func topLevelBlocks()->[Block] {
+		var blocks:[BlockItem] = []
 		//somehow, loop this
 		//read an abbreviation
 		while true {
+			//top level ends when we run out of bytes
 			if stream.cursor.byte >= stream.data.count {
-				return mainBlock
+				return blocks.flatMap({ (item) -> Block? in
+					return item as? Block
+				})
 			}
 			let abbreviation:Int = stream.fixedInt(width: 2)
 			if abbreviation == 0 {	//end
-				return mainBlock
+				//theoretically this shouldn't happen at the top level, but just in case...
+				return blocks.flatMap({ (item) -> Block? in
+					return item as? Block
+				})
 			} else if abbreviation == 1 {	//new sub block
 				//new block
 				//read block type
 				let blockIDs:Int = stream.variableInt(width: 8)
+				//get the right factory
 				let factory = self.factory(code: blockIDs)
+				//make the block
 				let subBlock:Block = factory.newBlock(stream:stream)
-				mainBlock.items.append(subBlock)
+				blocks.append(subBlock)
 				if let infoBlock = factory as? BlockInfoFactory {
 					blockInfoByCode = infoBlock.infosByCode
 				}
 			} else if abbreviation == 3 {//unabbreviated entry
 				let record:DataRecord = UnabbreviatedRecordFactory().newRecord(stream:stream)
-				mainBlock.items.append(record)
+				blocks.append(record)
 			} else {
-				//TODO: write me
-				fatalError()
+				//only other case is 2
+				//new abbreviations can't be defined at the top level, because we only have 2 abbreviation bits and they're all in use.
 			}
 		}
 		
 	}
 	
-	public func factory(code:Int)->BlockFactory {
+	open func factory(code:Int)->BlockFactory {
 		let factoryType:BlockFactory.Type = catalog[code] ?? GenericBlockFactory.self //SkipBlockFactory.self
-		var factory:BlockFactory = factoryType.init(code: code, info:blockInfoByCode[code])
+		var factory:BlockFactory = factoryType.init(code: code, info:blockInfoByCode[code]?.copy)
 		factory.factoryFactory = self
 		return factory
 	}
 	
 	//populate with factories which know how to build
-	private var catalog:[Int:BlockFactory.Type] = [0:BlockInfoFactory.self]
+	open var catalog:[Int:BlockFactory.Type] = [0:BlockInfoFactory.self]
 	
-	//is this even used?
-	public weak var factoryFactory:BlockFactoryFactory?
 }
 
 
-class UnabbreviatedRecordFactory {
-	func newRecord(stream:BitStream)->DataRecord {
+public struct UnabbreviatedRecordFactory {
+	public func newRecord(stream:BitStream)->DataRecord {
 		var primitives:[Primitive] = []
 		let start:Cursor = stream.cursor
 		let code:Int = stream.variableInt(width: 6)
@@ -314,9 +317,9 @@ class UnabbreviatedRecordFactory {
 }
 
 
-class AbbreviationFactory {
+public class AbbreviationFactory {
 	
-	func newAbbreviation(stream:BitStream)->Abbreviation {
+	public func newAbbreviation(stream:BitStream)->Abbreviation {
 		let numberOfOperands:Int = stream.variableInt(width: 5)
 		var operands:[Abbreviation.Operand] = []
 		for _ in 0..<numberOfOperands {

@@ -65,7 +65,7 @@ public enum Primitive {
 	}
 }
 
-//TODO: add cursor for beginning and end of record
+
 public struct DataRecord : BlockItem {
 	///all the primitives stored in the record
 	public var primitives:[Primitive] = []
@@ -97,8 +97,6 @@ public struct DataRecord : BlockItem {
 	}
 }
 
-//TODO: add cursor tracking for beginning and end of block
-//TODO: add tracking for abbreviation width
 public class Block : BlockItem {
 	public var blockID:Int
 	
@@ -154,6 +152,14 @@ public class BlockInfo {
 			finalAbbrevs[4 + index] = abbreviation
 		}
 		return finalAbbrevs
+	}
+	
+	public var copy:BlockInfo {
+		let newInstance = BlockInfo(code: code)
+		newInstance.name = name
+		newInstance.abbreviations = abbreviations
+		newInstance.recordNames = recordNames
+		return newInstance
 	}
 }
 
