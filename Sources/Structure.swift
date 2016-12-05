@@ -13,7 +13,7 @@ public protocol BlockItem {
 	
 }
 
-
+//TODO: add methods for "seeing" this as various quantities like a string, or an array of integers
 public enum Primitive {
 	case char(UnicodeScalar)
 	case integer(Int)
@@ -65,7 +65,7 @@ public enum Primitive {
 	}
 }
 
-
+//TODO: add cursor for beginning and end of record
 public struct DataRecord : BlockItem {
 	///all the primitives stored in the record
 	public var primitives:[Primitive] = []
@@ -86,22 +86,33 @@ public struct DataRecord : BlockItem {
 		}
 	}
 	
-	public init(primitives:[Primitive]) {
+	///the start of the record, after the abbreviation
+	public var start:Cursor
+	///the name of the record, if provided by an abbreviation
+	public var name:String?
+	public init(start:Cursor, primitives:[Primitive], name:String? = nil) {
 		self.primitives = primitives
+		self.start = start
+		self.name = name
 	}
 }
 
-
+//TODO: add cursor tracking for beginning and end of block
+//TODO: add tracking for abbreviation width
 public class Block : BlockItem {
 	public var blockID:Int
+	
+	///the number of bits in abbreviation
+	public var abbreviationWidth:Int
 	public var totalLength:Int	//consider changing to Int to eliminate impedence mismatch
 	
 	public var info:BlockInfo?
 	
 	public var items:[BlockItem] = []	//stack, or map with integer keys?
 	
-	public init(blockID:Int, totalLength:Int) {
+	public init(blockID:Int, abbreviationWidth:Int, totalLength:Int) {
 		self.blockID = blockID
+		self.abbreviationWidth = abbreviationWidth
 		self.totalLength = totalLength
 	}
 }
@@ -109,11 +120,14 @@ public class Block : BlockItem {
 
 public struct Abbreviation {
 	public enum Operand {
-		case literal(Int)	//scan it be bigger than int?
-		case fixed(Int)	//width of field
+		///scan it be bigger than int?
+		case literal(Int)
+		///Int is width of the field
+		case fixed(Int)
 		case char
 		case array
-		case variable(Int)	//width of field
+		///Int is width of the field
+		case variable(Int)
 		case blob
 	}
 	public var operands:[Operand]

@@ -41,7 +41,7 @@ public class SkipBlockFactory : BlockFactory {
 	
 	public func newBlock(stream:BitStream)->Block {
 		//although we discard this value, it's variable length, so we have to read it to skip it
-		let _ = stream.variableInt(width: 4)
+		let abbreviationWidth:Int = stream.variableInt(width: 4)
 		//round up
 		stream.roundUpCursorTo32Bits()
 		//read the number of words in this block
@@ -51,7 +51,7 @@ public class SkipBlockFactory : BlockFactory {
 		c.bit = 0
 		stream.seek(to: c)
 		//make the cursor skip it
-		return Block(blockID: code, totalLength: subBlockLength)
+		return Block(blockID: code, abbreviationWidth:abbreviationWidth, totalLength: subBlockLength)
 	}
 }
 
@@ -140,7 +140,7 @@ public class GenericBlockFactory : BlockFactory {
 		//round up
 		stream.roundUpCursorTo32Bits()
 		let subBlockLength:Int = stream.fixedInt(width: 32)
-		var block:Block = Block(blockID: code, totalLength: subBlockLength)
+		let block:Block = Block(blockID: code, abbreviationWidth:abbrevitationLength, totalLength: subBlockLength)
 		block.info = info
 		while true {
 			//read an abbreviation
@@ -206,7 +206,7 @@ public class GenericBlockFactory : BlockFactory {
 				return nil
 			}
 		}
-		
+		let start:Cursor = stream.cursor
 		var primitives:[Primitive] = []
 		for op in abbreviation.operands {
 			if let prim:Primitive = primitiveCreator(op) {
@@ -226,7 +226,9 @@ public class GenericBlockFactory : BlockFactory {
 			primitives.append(.array(arrayPrims))
 			break	//we cheated on the last element, skip it
 		}
-		return DataRecord(primitives:primitives)
+		let code:Int? = primitives.first?.integerValue
+		let name:String? = code != nil ? info?.recordNames[code!] : nil
+		return DataRecord(start:start, primitives:primitives, name:name)
 	}
 	
 	public func newAbbreviation(stream:BitStream)->Abbreviation {
@@ -250,14 +252,14 @@ public class PrimaryBlockFactory : BlockFactory, BlockFactoryFactory {
 	var blockInfoByCode:[Int:BlockInfo] = [:]
 	
 	public func newBlock(stream:BitStream)->Block {
-		var mainBlock = Block(blockID:0, totalLength: stream.data.count - stream.cursor.byte)
+		let mainBlock = Block(blockID:0, abbreviationWidth:2, totalLength: stream.data.count - stream.cursor.byte)
 		//somehow, loop this
 		//read an abbreviation
 		while true {
 			if stream.cursor.byte >= stream.data.count {
 				return mainBlock
 			}
-			var abbreviation:Int = stream.fixedInt(width: 2)
+			let abbreviation:Int = stream.fixedInt(width: 2)
 			if abbreviation == 0 {	//end
 				return mainBlock
 			} else if abbreviation == 1 {	//new sub block
@@ -299,6 +301,7 @@ public class PrimaryBlockFactory : BlockFactory, BlockFactoryFactory {
 class UnabbreviatedRecordFactory {
 	func newRecord(stream:BitStream)->DataRecord {
 		var primitives:[Primitive] = []
+		let start:Cursor = stream.cursor
 		let code:Int = stream.variableInt(width: 6)
 		primitives.append(.integer(code))
 		let numberOfOperands:Int = stream.variableInt(width: 6)
@@ -306,7 +309,7 @@ class UnabbreviatedRecordFactory {
 			let operand:Int = stream.variableInt(width: 6)
 			primitives.append(.integer(operand))
 		}
-		return DataRecord(primitives:primitives)
+		return DataRecord(start:start, primitives:primitives, name:nil)
 	}
 }
 
